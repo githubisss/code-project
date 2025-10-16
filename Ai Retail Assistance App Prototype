@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Retail Assistant</title>
+    <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa;
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        .app-container {
+            max-width: 375px;
+            margin: 0 auto;
+            height: 100%;
+            background: white;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .status-bar {
+            height: 44px;
+            background: #1a2332;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .screen {
+            display: none;
+            height: calc(100% - 44px - 80px);
+            overflow-y: auto;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Chat Screen Styles */
+        .chat-header {
+            background: #1a2332;
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ai-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #d4af37, #f4e4a6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chat-subtitle {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .chat-messages {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            display: flex;
+            gap: 8px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message.ai .message-bubble {
+            background: #f0f2f5;
+            color: #1a2332;
+        }
+
+        .message.user .message-bubble {
+            background: #1a2332;
+            color: white;
+        }
+
+        .try-on-button {
+            background: #d4af37;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .try-on-button:hover {
+            background: #b8941f;
+            transform: translateY(-1px);
+        }
+
+        .chat-input {
+            padding: 16px 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: #d4af37;
+        }
+
+        .mic-button, .send-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mic-button {
+            background: #f0f2f5;
+            color: #1a2332;
+        }
+
+        .send-button {
+            background: #d4af37;
+            color: white;
+        }
+
+        /* Virtual Try-On Screen Styles */
+        .tryon-header {
+            background: #1a2332;
+            color: white;
+            padding: 16px 20px;
+            text-align: center;
+        }
+
+        .tryon-content {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .virtual-clone {
+            width: 200px;
+            height: 300px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border: 3px solid #d4af37;
+        }
+
+        .avatar-figure {
+            position: relative;
+            width: 100px;
+            height: 200px;
+        }
+
+        .avatar-head {
+            width: 40px;
+            height: 40px;
+            background: #fdbcb4;
+            border-radius: 50%;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 2px solid #f39c12;
+        }
+
+        .avatar-hair {
+            width: 44px;
+            height: 25px;
+            background: #8b4513;
+            border-radius: 22px 22px 0 0;
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .avatar-face {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+        }
+
+        .avatar-neck {
+            width: 12px;
+            height: 15px;
+            background: #fdbcb4;
+            position: absolute;
+            top: 48px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .avatar-torso {
+            width: 50px;
+            height: 70px;
+            background: #fdbcb4;
+            position: absolute;
+            top: 63px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 25px 25px 0 0;
+        }
+
+        .avatar-outfit {
+            position: absolute;
+            top: 63px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 90px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-radius: 8px 8px 30px 30px;
+            transition: all 0.3s ease;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .avatar-outfit::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 15px;
+            background: inherit;
+            border-radius: 25px 25px 8px 8px;
+            opacity: 0.8;
+        }
+
+        .avatar-outfit::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 20px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 1px;
+        }
+
+        .avatar-arms {
+            position: absolute;
+            top: 70px;
+        }
+
+        .avatar-arm-left, .avatar-arm-right {
+            width: 12px;
+            height: 45px;
+            background: #fdbcb4;
+            border-radius: 6px;
+            position: absolute;
+        }
+
+        .avatar-arm-left {
+            left: 20px;
+            transform: rotate(-15deg);
+        }
+
+        .avatar-arm-right {
+            right: 20px;
+            transform: rotate(15deg);
+        }
+
+        .avatar-legs {
+            position: absolute;
+            top: 148px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .avatar-leg-left, .avatar-leg-right {
+            width: 15px;
+            height: 50px;
+            background: #fdbcb4;
+            border-radius: 7px;
+            position: absolute;
+        }
+
+        .avatar-leg-left {
+            left: -10px;
+        }
+
+        .avatar-leg-right {
+            right: -10px;
+        }
+
+        .avatar-shoes {
+            position: absolute;
+            top: 190px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .avatar-shoe-left, .avatar-shoe-right {
+            width: 20px;
+            height: 8px;
+            background: #2c3e50;
+            border-radius: 10px 2px 2px 2px;
+            position: absolute;
+            transition: all 0.3s ease;
+        }
+
+        .avatar-shoe-left {
+            left: -15px;
+        }
+
+        .avatar-shoe-right {
+            right: -15px;
+        }
+
+        .avatar-accessories {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .avatar-handbag {
+            position: absolute;
+            top: 85px;
+            right: 5px;
+            width: 16px;
+            height: 12px;
+            background: #f39c12;
+            border-radius: 3px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            transform: rotate(15deg);
+        }
+
+        .avatar-handbag::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            width: 12px;
+            height: 2px;
+            background: inherit;
+            border-radius: 1px;
+        }
+
+        .avatar-handbag.visible {
+            opacity: 1;
+        }
+
+        .avatar-jewelry {
+            position: absolute;
+            top: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 8px;
+            background: #d4af37;
+            border-radius: 10px;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .avatar-jewelry::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: #d4af37;
+            border-radius: 50%;
+        }
+
+        .avatar-jewelry.visible {
+            opacity: 1;
+        }
+
+        .calibration-badge {
+            background: #27ae60;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+        }
+
+        .product-carousel {
+            margin: 20px 0;
+        }
+
+        .carousel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a2332;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+
+        .product-list {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .product-item {
+            min-width: 80px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .product-item:hover {
+            transform: scale(1.05);
+        }
+
+        .product-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .product-name {
+            font-size: 12px;
+            color: #1a2332;
+            font-weight: 500;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #d4af37;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f2f5;
+            color: #1a2332;
+        }
+
+        /* Profile Screen Styles */
+        .profile-header {
+            background: linear-gradient(135deg, #1a2332, #2c3e50);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .profile-subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .profile-content {
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .loyalty-card {
+            background: linear-gradient(135deg, #d4af37, #f4e4a6);
+            color: white;
+            text-align: center;
+        }
+
+        .points-balance {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .points-value {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+
+        .qr-card {
+            text-align: center;
+        }
+
+        .qr-code {
+            width: 150px;
+            height: 150px;
+            background: white;
+            border: 2px solid #1a2332;
+            margin: 16px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #1a2332;
+            position: relative;
+        }
+
+        .qr-pattern {
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(90deg, #1a2332 50%, transparent 50%),
+                linear-gradient(#1a2332 50%, transparent 50%);
+            background-size: 10px 10px;
+            opacity: 0.8;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a2332;
+            margin-bottom: 12px;
+        }
+
+        .card-description {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 375px;
+            height: 80px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            background: #f0f2f5;
+            color: #d4af37;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .past-interactions {
+            margin-top: 8px;
+        }
+
+        .interaction-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f2f5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .interaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .interaction-text {
+            font-size: 14px;
+            color: #1a2332;
+        }
+
+        .interaction-date {
+            font-size: 12px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span>9:41</span>
+            <span>StyleAI</span>
+            <span>100%</span>
+        </div>
+
+        <!-- Chat Screen -->
+        <div class="screen active" id="chat-screen">
+            <div class="chat-header">
+                <div class="ai-avatar">🤖</div>
+                <div>
+                    <div class="chat-title">Your AI Stylist</div>
+                    <div class="chat-subtitle">Online • Ready to help</div>
+                </div>
+            </div>
+            
+            <div class="chat-messages">
+                <div class="message ai">
+                    <div class="ai-avatar">🤖</div>
+                    <div>
+                        <div class="message-bubble">
+                            Hi Sarah! I'm your personal AI stylist. What are you looking for today?
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="message user">
+                    <div class="message-bubble">
+                        I need a red dress for a dinner date, size 8
+                    </div>
+                </div>
+                
+                <div class="message ai">
+                    <div class="ai-avatar">🤖</div>
+                    <div>
+                        <div class="message-bubble">
+                            Perfect! I found some gorgeous red dresses that would look amazing on you. Based on your style preferences and measurements, I've curated a few options.
+                        </div>
+                        <button class="try-on-button" onclick="switchScreen('tryon')">
+                            👗 View in Try-On Studio
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="message user">
+                    <div class="message-bubble">
+                        That sounds great! Show me what they look like on me
+                    </div>
+                </div>
+                
+                <div class="message ai">
+                    <div class="ai-avatar">🤖</div>
+                    <div>
+                        <div class="message-bubble">
+                            Opening your Virtual Clone now! You can see how each dress looks and mix & match with accessories. 
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input">
+                <input type="text" class="input-field" placeholder="Type your message...">
+                <button class="mic-button">🎤</button>
+                <button class="send-button">➤</button>
+            </div>
+        </div>
+
+        <!-- Virtual Try-On Screen -->
+        <div class="screen" id="tryon-screen">
+            <div class="tryon-header">
+                <h2>Your Virtual Clone</h2>
+                <p style="font-size: 14px; opacity: 0.8;">See how items look on your personalized avatar</p>
+            </div>
+            
+            <div class="tryon-content">
+                <div class="virtual-clone">
+                    <div class="calibration-badge">Calibrated</div>
+                    <div class="avatar-figure">
+                        <div class="avatar-hair"></div>
+                        <div class="avatar-head">
+                            <div class="avatar-face">😊</div>
+                        </div>
+                        <div class="avatar-neck"></div>
+                        <div class="avatar-torso"></div>
+                        <div class="avatar-outfit" id="current-outfit"></div>
+                        <div class="avatar-arms">
+                            <div class="avatar-arm-left"></div>
+                            <div class="avatar-arm-right"></div>
+                        </div>
+                        <div class="avatar-legs">
+                            <div class="avatar-leg-left"></div>
+                            <div class="avatar-leg-right"></div>
+                        </div>
+                        <div class="avatar-shoes">
+                            <div class="avatar-shoe-left" id="shoe-left"></div>
+                            <div class="avatar-shoe-right" id="shoe-right"></div>
+                        </div>
+                        <div class="avatar-accessories">
+                            <div class="avatar-handbag" id="handbag"></div>
+                            <div class="avatar-jewelry" id="jewelry"></div>
+                        </div>
+                    </div>
+                    <p style="font-size: 12px; color: #6b7280; margin-top: 10px;">Based on your measurements</p>
+                </div>
+                
+                <div class="product-carousel">
+                    <div class="carousel-title">Recommended Dresses</div>
+                    <div class="product-list">
+                        <div class="product-item" onclick="changeOutfit('#e74c3c', 'Crimson Elegance')">
+                            <div class="product-image" style="background: #e74c3c;">👗</div>
+                            <div class="product-name">Crimson Elegance</div>
+                        </div>
+                        <div class="product-item" onclick="changeOutfit('#c0392b', 'Ruby Romance')">
+                            <div class="product-image" style="background: #c0392b;">👗</div>
+                            <div class="product-name">Ruby Romance</div>
+                        </div>
+                        <div class="product-item" onclick="changeOutfit('#e67e22', 'Sunset Chic')">
+                            <div class="product-image" style="background: #e67e22;">👗</div>
+                            <div class="product-name">Sunset Chic</div>
+                        </div>
+                        <div class="product-item" onclick="changeOutfit('#8e44ad', 'Plum Perfect')">
+                            <div class="product-image" style="background: #8e44ad;">👗</div>
+                            <div class="product-name">Plum Perfect</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="product-carousel">
+                    <div class="carousel-title">Accessories</div>
+                    <div class="product-list">
+                        <div class="product-item" onclick="toggleAccessory('handbag', '#f39c12', 'Gold Clutch')">
+                            <div class="product-image" style="background: #f39c12;">👜</div>
+                            <div class="product-name">Gold Clutch</div>
+                        </div>
+                        <div class="product-item" onclick="changeShoes('#2c3e50', 'Black Heels')">
+                            <div class="product-image" style="background: #2c3e50;">👠</div>
+                            <div class="product-name">Black Heels</div>
+                        </div>
+                        <div class="product-item" onclick="toggleAccessory('jewelry', '#d4af37', 'Gold Jewelry')">
+                            <div class="product-image" style="background: #d4af37;">💍</div>
+                            <div class="product-name">Gold Jewelry</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary">💾 Save Look</button>
+                    <button class="btn btn-primary">🛒 Add to Cart</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Screen -->
+        <div class="screen" id="profile-screen">
+            <div class="profile-header">
+                <div class="profile-name">Sarah Johnson</div>
+                <div class="profile-subtitle">VIP Member since 2023</div>
+            </div>
+            
+            <div class="profile-content">
+                <div class="card loyalty-card">
+                    <div class="points-balance">3,500</div>
+                    <div class="points-value">Points • $35 Value</div>
+                    <button class="btn btn-secondary" style="background: rgba(255,255,255,0.2); color: white;">View Rewards</button>
+                </div>
+                
+                <div class="card qr-card">
+                    <div class="card-title">Continue In-Store</div>
+                    <div class="card-description">Scan this QR code at any AI Mirror to pick up your conversation and try on your saved items</div>
+                    <div class="qr-code">
+                        <div class="qr-pattern"></div>
+                        <div style="position: absolute; background: white; padding: 4px; border-radius: 4px; font-weight: bold;">SCAN ME</div>
+                    </div>
+                    <p style="font-size: 12px; color: #6b7280;">Valid for 24 hours</p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">Recent Activity</div>
+                    <div class="past-interactions">
+                        <div class="interaction-item">
+                            <div>
+                                <div class="interaction-text">Red dress consultation</div>
+                                <div class="interaction-date">Today, 2:30 PM</div>
+                            </div>
+                            <span>👗</span>
+                        </div>
+                        <div class="interaction-item">
+                            <div>
+                                <div class="interaction-text">Summer collection preview</div>
+                                <div class="interaction-date">Yesterday</div>
+                            </div>
+                            <span>☀️</span>
+                        </div>
+                        <div class="interaction-item">
+                            <div>
+                                <div class="interaction-text">Saved: Black evening gown</div>
+                                <div class="interaction-date">3 days ago</div>
+                            </div>
+                            <span>💾</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchScreen('chat')">
+                <div class="nav-icon">💬</div>
+                <div class="nav-label">Assistant</div>
+            </div>
+            <div class="nav-item" onclick="switchScreen('tryon')">
+                <div class="nav-icon">👗</div>
+                <div class="nav-label">Try-On</div>
+            </div>
+            <div class="nav-item" onclick="switchScreen('profile')">
+                <div class="nav-icon">👤</div>
+                <div class="nav-label">Profile</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchScreen(screenName) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Show selected screen
+            document.getElementById(screenName + '-screen').classList.add('active');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+        }
+
+        function changeOutfit(color, name) {
+            const outfit = document.getElementById('current-outfit');
+            outfit.style.background = color;
+            
+            // Add a subtle animation
+            outfit.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                outfit.style.transform = 'scale(1)';
+            }, 200);
+            
+            showFeedback(`Now wearing: ${name}`);
+        }
+
+        function toggleAccessory(type, color, name) {
+            const accessory = document.getElementById(type);
+            const isVisible = accessory.classList.contains('visible');
+            
+            if (isVisible) {
+                accessory.classList.remove('visible');
+                showFeedback(`Removed: ${name}`);
+            } else {
+                accessory.classList.add('visible');
+                accessory.style.background = color;
+                showFeedback(`Added: ${name}`);
+            }
+            
+            // Add animation
+            accessory.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                accessory.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        function changeShoes(color, name) {
+            const shoeLeft = document.getElementById('shoe-left');
+            const shoeRight = document.getElementById('shoe-right');
+            
+            shoeLeft.style.background = color;
+            shoeRight.style.background = color;
+            
+            // Add animation
+            shoeLeft.style.transform = 'scale(1.1)';
+            shoeRight.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                shoeLeft.style.transform = 'scale(1)';
+                shoeRight.style.transform = 'scale(1)';
+            }, 200);
+            
+            showFeedback(`Changed shoes: ${name}`);
+        }
+
+        function showFeedback(message) {
+            const feedback = document.createElement('div');
+            feedback.textContent = message;
+            feedback.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #1a2332;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 20px;
+                font-size: 14px;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s;
+            `;
+            
+            document.body.appendChild(feedback);
+            setTimeout(() => feedback.style.opacity = '1', 10);
+            setTimeout(() => {
+                feedback.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(feedback), 300);
+            }, 1500);
+        }
+
+        // Add some interactivity to the chat input
+        document.querySelector('.input-field').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const message = this.value.trim();
+                if (message) {
+                    // Add user message to chat
+                    const chatMessages = document.querySelector('.chat-messages');
+                    const userMessage = document.createElement('div');
+                    userMessage.className = 'message user';
+                    userMessage.innerHTML = `<div class="message-bubble">${message}</div>`;
+                    chatMessages.appendChild(userMessage);
+                    
+                    // Clear input
+                    this.value = '';
+                    
+                    // Scroll to bottom
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    
+                    // Simulate AI response after a delay
+                    setTimeout(() => {
+                        const aiMessage = document.createElement('div');
+                        aiMessage.className = 'message ai';
+                        aiMessage.innerHTML = `
+                            <div class="ai-avatar">🤖</div>
+                            <div>
+                                <div class="message-bubble">I'm analyzing your request and finding the perfect options for you! ✨</div>
+                            </div>
+                        `;
+                        chatMessages.appendChild(aiMessage);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }, 1000);
+                }
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98f8476465787f22',t:'MTc2MDYyNTI4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
